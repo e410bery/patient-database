@@ -1,7 +1,9 @@
 test_dict = {}
 
+
 class Test:
-    def __init__(self, name, timestamp, mrn, phys_email, lab_email, test_r, status):
+    def __init__(self, name, timestamp, mrn,
+                 phys_email, lab_email, test_r, status):
         self.name = name
         self.timestamp = timestamp
         self.mrn = mrn

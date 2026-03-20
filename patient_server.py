@@ -2,6 +2,7 @@ import lab_server
 
 db = {}
 
+
 class Patient:
     def __init__(self, mrn, email, age, tr):
         self.mrn = mrn
