@@ -1,2 +1,14 @@
+from flask import Flask, request, jsonify
+
 lab_email = ""
-lab_tests_available = []
+open_requests = []
+lab_tests_available = ["HR", "HDL", "LDL", "TSH"]
+
+
+def lab_routes(app):
+
+    @app.route('/lab/email_address', methods=['POST'])
+    def register_lab_email():
+        data = request.get_json()
+        # parse and store email
+        return "Lab email registered", 200
