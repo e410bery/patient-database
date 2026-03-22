@@ -17,3 +17,8 @@ def create_patient(mrn, email, age):
 
 def get_patient(mrn):
     return db.get(mrn)
+
+
+def get_patient_phys_email(mrn):
+    patient = get_patient(mrn)
+    return patient.email

@@ -30,3 +30,11 @@ def test_get_patient_none():
     from patient_database import db, get_patient
     db.clear()
     assert get_patient(123) is None
+
+
+def test_get_patient_phys_email():
+    from patient_database import db, create_patient, get_patient_phys_email
+    db.clear()
+    email = "test_email"
+    created = create_patient(123, email, 21)
+    assert get_patient_phys_email(123) == email
