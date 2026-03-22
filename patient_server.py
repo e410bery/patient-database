@@ -3,6 +3,10 @@ from flask import Flask, request
 
 
 def patient_routes(app):
+    @app.route('/patient', methods=['GET'])
+    def patient_server_status():
+        return "Patient Server is running"
+
     @app.route('/patient/new_patient', methods=['POST'])
     def new_patient():
         return "Added Patient", 200
