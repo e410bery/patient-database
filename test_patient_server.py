@@ -51,6 +51,15 @@ def test_new_patient_bad_age(client):
     assert response.data.decode() == "Invalid Age"
 
 
+def test_new_patient_bad_email(client):
+    in_json = {"patient_mrn": "123",
+               "attending_email": 123,
+               "patient_age": "9"}
+    response = client.post("/patient/new_patient", json=in_json)
+    assert response.status_code == 400
+    assert response.data.decode() == "Invalid Email"
+
+
 def test_new_request(client):
     response = client.post("/patient/new_request")
     assert response.status_code == 200

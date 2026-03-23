@@ -30,6 +30,8 @@ def patient_routes(app):
         if age is None:
             return "Invalid Age", 400
         email = request.json["attending_email"]
+        if type(email) is not str:
+            return "Invalid Email", 400
         patient_database.create_patient(mrn,
                                        email,
                                        age)
@@ -37,6 +39,7 @@ def patient_routes(app):
 
     @app.route('/patient/new_request', methods=['POST'])
     def new_request():
+
         return "Added Request", 200
 
     @app.route('/patient/results/<patient_mrn>', methods=['GET'])
