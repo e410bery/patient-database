@@ -28,6 +28,27 @@ def test_new_patient(client):
     response = client.post("/patient/new_patient", json=in_json)
     assert response.status_code == 200
     assert response.data.decode() == "Added Patient"
+    from patient_database import db
+    assert len(db) == 1
+    assert db[123].age == 21
+
+
+def test_new_patient_bad_mrn(client):
+    in_json = {"patient_mrn": "1a",
+               "attending_email": 'emf55@duke.edu',
+               "patient_age": 21}
+    response = client.post("/patient/new_patient", json=in_json)
+    assert response.status_code == 400
+    assert response.data.decode() == "Invalid MRN"
+
+
+def test_new_patient_bad_age(client):
+    in_json = {"patient_mrn": "123",
+               "attending_email": 'emf55@duke.edu',
+               "patient_age": "nine"}
+    response = client.post("/patient/new_patient", json=in_json)
+    assert response.status_code == 400
+    assert response.data.decode() == "Invalid Age"
 
 
 def test_new_request(client):
@@ -61,6 +82,24 @@ def test_get_average_result(client):
 
 
 def test_get_interval_average(client):
-    response = client.get("/patient/results/interval_average")
+    response = client.post("/patient/results/interval_average")
     assert response.status_code == 200
     assert response.data.decode() == "Interval Average: "
+
+
+@pytest.mark.parametrize(
+    "input_val, expected",
+    [
+        (25, 25),
+        ("30", 30),
+        ("0", 0),
+        ("a14", None),
+        (3.14, None),
+        ("3.14", None),
+        ("abc", None),
+        ("", None),
+        (None, None),
+    ])
+def test_validate_mrn_age(input_val, expected):
+    from patient_server import validate_mrn_age
+    assert validate_mrn_age(input_val) == expected
