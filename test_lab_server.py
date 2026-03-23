@@ -29,3 +29,12 @@ def test_open_requests(client):
     response = client.get('/lab/open_requests')
     assert response.status_code == 200
     assert response.get_json() == []
+
+
+def test_new_result(client):
+    in_json = {"patient_mrn": 123,
+               "test_name": "HR",
+               "test_result": 80}
+    response = client.post('/lab/new_result', json=in_json)
+    assert response.status_code == 200
+    assert response.data.decode() == "Result received"

@@ -20,3 +20,7 @@ def lab_routes(app):
     @app.route('/lab/open_requests', methods=['GET'])
     def post_open_requests():
         return jsonify(open_requests)
+
+    @app.route('/lab/new_result', methods=['POST'])
+    def post_new_result():
+        return "Result received", 200
