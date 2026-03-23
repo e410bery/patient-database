@@ -12,3 +12,7 @@ def lab_routes(app):
         data = request.get_json()
         # parse and store email
         return "Lab email registered", 200
+
+    @app.route('/lab/list_available_tests', methods=['GET'])
+    def list_available_tests():
+        return jsonify(lab_tests_available), 200

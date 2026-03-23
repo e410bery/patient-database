@@ -17,3 +17,9 @@ def test_register_lab_email(client):
                            json={"email": "lab@hospital.com"})
     assert response.data.decode() == "Lab email registered"
     assert response.status_code == 200
+
+
+def test_available_tests(client):
+    response = client.get('/lab/list_available_tests')
+    assert response.status_code == 200
+    assert response.get_json() == ["HR", "HDL", "LDL", "TSH"]
