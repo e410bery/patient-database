@@ -23,3 +23,9 @@ def test_available_tests(client):
     response = client.get('/lab/list_available_tests')
     assert response.status_code == 200
     assert response.get_json() == ["HR", "HDL", "LDL", "TSH"]
+
+
+def test_open_requests(client):
+    response = client.get('/lab/open_requests')
+    assert response.status_code == 200
+    assert response.get_json() == []

@@ -16,3 +16,7 @@ def lab_routes(app):
     @app.route('/lab/list_available_tests', methods=['GET'])
     def list_available_tests():
         return jsonify(lab_tests_available), 200
+
+    @app.route('/lab/open_requests', methods=['GET'])
+    def post_open_requests():
+        return jsonify(open_requests)
