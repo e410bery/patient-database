@@ -1,5 +1,6 @@
 import lab_server
 import patient_database
+import test_dict
 from flask import Flask, request
 
 
@@ -39,7 +40,17 @@ def patient_routes(app):
 
     @app.route('/patient/new_request', methods=['POST'])
     def new_request():
-
+        mrn = request.json["patient_mrn"]
+        mrn = validate_mrn_age(mrn)
+        if mrn is None:
+            return "Invalid MRN", 400
+        patient = patient_database.get_patient(mrn)
+        if patient is None:
+            return "Patient not found", 400
+        test = request.json["test_name"]
+        if test not in lab_server.lab_tests_available:
+            return "Test not found", 400
+        test_dict.create_test(mrn, test)
         return "Added Request", 200
 
     @app.route('/patient/results/<patient_mrn>', methods=['GET'])

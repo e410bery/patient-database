@@ -60,8 +60,48 @@ def test_new_patient_bad_email(client):
     assert response.data.decode() == "Invalid Email"
 
 
-def test_new_request(client):
-    response = client.post("/patient/new_request")
+def test_new_request_invalid_mrn(client):
+    response = client.post(
+        "/patient/new_request",
+        json={"patient_mrn": "abc", "test_name": "HDL"},
+    )
+    assert response.status_code == 400
+    assert response.data.decode() == "Invalid MRN"
+
+
+def test_new_request_patient_not_found(client):
+    import patient_database
+    patient_database.db.clear()
+    response = client.post(
+        "/patient/new_request",
+        json={"patient_mrn": 123, "test_name": "HDL"},
+    )
+    assert response.status_code == 400
+    assert response.data.decode() == "Patient not found"
+
+
+def test_new_request_test_not_found(client):
+    import patient_database
+    patient_database.db.clear()
+    patient_database.create_patient(123, "emf55", 21)
+    response = client.post(
+        "/patient/new_request",
+        json={"patient_mrn": "123", "test_name": "INVALID_TEST"},
+    )
+    assert response.status_code == 400
+    assert response.data.decode() == "Test not found"
+
+
+def test_new_request_success(client):
+    import patient_database
+    patient_database.db.clear()
+    patient_database.create_patient(123, "emf55", 21)
+    import lab_server
+    lab_server.lab_tests_available = ["HDL"]
+    response = client.post(
+        "/patient/new_request",
+        json={"patient_mrn": "123", "test_name": "HDL"},
+    )
     assert response.status_code == 200
     assert response.data.decode() == "Added Request"
 
