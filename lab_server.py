@@ -50,7 +50,13 @@ def lab_routes(app):
 
     @app.route('/lab/email_address', methods=['POST'])
     def register_lab_email():
+        global lab_email
         data = request.get_json()
+        if not data or 'email' not in data:
+            return "Missing email", 400
+        if type(data['email']) is not str:
+            return "Email must be a string", 400
+        lab_email = data['email']
         return "Lab email registered", 200
 
     @app.route('/lab/list_available_tests', methods=['GET'])

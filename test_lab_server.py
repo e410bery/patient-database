@@ -1,4 +1,5 @@
 import pytest
+import lab_server
 from server import app
 from lab_server import lab_routes, validate_mrn, is_abnormal
 
@@ -55,11 +56,10 @@ def client():
         yield client
 
 
-def test_register_lab_email(client):
-    response = client.post('/lab/email_address',
-                           json={"email": "lab@hospital.com"})
-    assert response.data.decode() == "Lab email registered"
-    assert response.status_code == 200
+def test_register_lab_email_stores_email(client):
+    client.post('/lab/email_address',
+                json={"email": "lab@hospital.com"})
+    assert lab_server.lab_email == "lab@hospital.com"
 
 
 def test_available_tests(client):
