@@ -122,6 +122,21 @@ def test_get_available_results(client):
                                      f"patient {mrn}: {test_name}"
 
 
+@pytest.mark.parametrize(
+    "inputs, expected",
+    [
+        ([1, 2, 3], 2.0),
+        ([10, 20, 30, 40], 25.0),
+        ([5], 5.0),
+        ([0, 0, 0], 0.0),
+        ([-1, -2, -3], -2.0),
+    ],
+)
+def test_find_average(inputs, expected):
+    from patient_server import find_average 
+    assert find_average(inputs) == expected
+
+
 def test_get_average_result(client):
     mrn = "12345"
     test_name = "HDL"

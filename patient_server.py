@@ -15,6 +15,10 @@ def validate_mrn_age(val):
         return None
 
 
+def find_average(results):
+    return sum(results) / len(results)
+
+
 def patient_routes(app):
     @app.route('/patient', methods=['GET'])
     def patient_server_status():
@@ -60,11 +64,26 @@ def patient_routes(app):
 
     @app.route('/patient/results/<patient_mrn>/<test_name>', methods=['GET'])
     def get_available_results(patient_mrn, test_name):
+        '''mrn = request.json["patient_mrn"]
+        mrn = validate_mrn_age(mrn)
+        if mrn is None:
+            return "Invalid MRN", 400
+        patient = patient_database.get_patient(mrn)
+        if patient is None:
+            return "Patient not found", 400
+        test = request.json["test_name"]
+        if test not in lab_server.lab_tests_available:
+            return "Test not found", 400
+        # ask nika how she stored results for completed tests
+        results = patient.tests[test]
+        return results, 200'''
         return f"Available results for patient {patient_mrn}: {test_name}", 200
 
     @app.route('/patient/results/<patient_mrn>/<test_name>/average',
                methods=['GET'])
     def get_average_result(patient_mrn, test_name):
+        results = get_available_results(patient_mrn, test_name)
+        # return find_average(results), 200
         return "Average result: ", 200
 
     @app.route('/patient/results/interval_average', methods=['POST'])
