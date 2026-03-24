@@ -1,5 +1,8 @@
 from flask import Flask, request, jsonify
 import requests
+import logging
+from datetime import datetime
+from test_dict import get_test
 
 lab_email = ""
 open_requests = []
@@ -125,5 +128,48 @@ def lab_routes(app):
 
     @app.route('/lab/new_result', methods=['POST'])
     def post_new_result():
-        '''Return a list of all open test requests.'''
+        data = request.get_json()
+        for key in ["patient_mrn", "test_name", "test_result"]:
+            if key not in data:
+                return f"Missing key: {key}", 400
+
+        patient_mrn = validate_mrn(data['patient_mrn'])
+        if patient_mrn is False:
+            return "Invalid MRN", 400
+
+        if data['test_name'] not in lab_tests_available:
+            return "Invalid test name", 400
+
+        if type(data['test_result']) not in [int, float]:
+            return "Invalid test result", 400
+
+        test = get_test(patient_mrn, data['test_name'])
+        if test is None:
+            return "Test request not found", 400
+
+        test_name = data['test_name']
+        test_result = data['test_result']
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+        test.test_r = test_result
+        test.timestamp = timestamp
+        abnormal = is_abnormal(test_name, test_result, test.age)
+        test.status = "Abnormal" if abnormal else "Normal"
+
+        open_requests[:] = [
+            r for r in open_requests
+            if not (r["patient_mrn"] == patient_mrn
+                    and r["test_name"] == test_name)
+        ]
+
+        if abnormal:
+            subject = (f"Abnormal result: MRN {patient_mrn}, "
+                       f"Test {test_name}")
+            content = (f"Patient MRN: {patient_mrn}, Test: {test_name}, "
+                       f"Result: {test_result}, Time: {timestamp}")
+            send_email(test.lab_email, test.phys_email, subject, content)
+            logging.warning(f"Abnormal result: MRN {patient_mrn}, "
+                            f"Test {test_name}, Result {test_result}, "
+                            f"Attending {test.phys_email}")
+
         return "Result received", 200

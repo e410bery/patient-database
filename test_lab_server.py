@@ -1,7 +1,9 @@
 import pytest
 import lab_server
 from server import app
+from patient_database import db, Patient
 from lab_server import lab_routes, validate_mrn, is_abnormal
+import test_dict
 
 lab_routes(app)
 
@@ -15,6 +17,7 @@ lab_routes(app)
     ("", False),
     (" ", False),
     ("12 3", False),
+    ("-123", False),
 ])
 def test_validate_mrn(mrn, expected):
     assert validate_mrn(mrn) == expected
@@ -97,7 +100,6 @@ def test_open_requests_empty(client):
 
 
 def test_open_requests_with_data(client):
-    import lab_server
     lab_server.open_requests.append({
         "patient_mrn": 123,
         "test_name": "HR",
@@ -111,10 +113,63 @@ def test_open_requests_with_data(client):
     lab_server.open_requests.clear()
 
 
-def test_new_result(client):
-    in_json = {"patient_mrn": 123,
-               "test_name": "HR",
-               "test_result": 80}
-    response = client.post('/lab/new_result', json=in_json)
+def test_new_result_invalid_test_name(client):
+    db[123] = Patient(123, "doc@hospital.com", 25, [])
+    test_dict.create_test(123, "HDL")
+    response = client.post('/lab/new_result',
+                           json={"patient_mrn": 123,
+                                 "test_name": "INVALID",
+                                 "test_result": 70})
+    assert response.status_code == 400
+
+
+@pytest.fixture(autouse=True)
+def reset_state():
+    import test_dict as td
+    db.clear()
+    td.test_dict.clear()
+    lab_server.open_requests.clear()
+    yield
+    db.clear()
+    td.test_dict.clear()
+    lab_server.open_requests.clear()
+
+
+def test_new_result_invalid_test_result_type(client):
+    db[123] = Patient(123, "doc@hospital.com", 25, [])
+    test_dict.create_test(123, "HDL")
+    response = client.post('/lab/new_result',
+                           json={"patient_mrn": 123,
+                                 "test_name": "HDL",
+                                 "test_result": "seventy"})
+    assert response.status_code == 400
+
+
+def test_new_result_test_not_found(client):
+    db[123] = Patient(123, "doc@hospital.com", 25, [])
+    response = client.post('/lab/new_result',
+                           json={"patient_mrn": 123,
+                                 "test_name": "HDL",
+                                 "test_result": 70})
+    assert response.status_code == 400
+
+
+def test_new_result_success(client):
+    db[123] = Patient(123, "doc@hospital.com", 25, [])
+    test_dict.create_test(123, "HDL")
+    response = client.post('/lab/new_result',
+                           json={"patient_mrn": 123,
+                                 "test_name": "HDL",
+                                 "test_result": 70})
     assert response.status_code == 200
     assert response.data.decode() == "Result received"
+
+
+def test_new_result_stores_result(client):
+    db[123] = Patient(123, "doc@hospital.com", 25, [])
+    test_dict.create_test(123, "HDL")
+    client.post('/lab/new_result',
+                json={"patient_mrn": 123,
+                      "test_name": "HDL",
+                      "test_result": 70})
+    assert test_dict.get_test(123, "HDL").test_r == 70
