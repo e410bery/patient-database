@@ -91,10 +91,25 @@ def test_list_available_tests(client):
     assert response.get_json() == ["HR", "HDL", "LDL", "TSH"]
 
 
-def test_open_requests(client):
+def test_open_requests_empty(client):
     response = client.get('/lab/open_requests')
     assert response.status_code == 200
     assert response.get_json() == []
+
+
+def test_open_requests_with_data(client):
+    import lab_server
+    lab_server.open_requests.append({
+        "patient_mrn": 123,
+        "test_name": "HR",
+        "request_timestamp": "2018-03-19 11:00:36"
+    })
+    response = client.get('/lab/open_requests')
+    assert response.status_code == 200
+    assert len(response.get_json()) == 1
+    assert response.get_json()[0]["patient_mrn"] == 123
+    assert response.get_json()[0]["test_name"] == "HR"
+    lab_server.open_requests.clear()
 
 
 def test_new_result(client):
