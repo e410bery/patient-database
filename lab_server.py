@@ -106,7 +106,12 @@ def lab_routes(app):
 
     @app.route('/lab/list_available_tests', methods=['GET'])
     def list_available_tests():
-        '''Return a list of all available test names.'''
+        '''Return a list of all available test names.
+
+        Returns:
+        200 with JSON list of available test name strings:
+        ["HR", "HDL", "LDL", "TSH"]
+        '''
         return jsonify(lab_tests_available), 200
 
     @app.route('/lab/open_requests', methods=['GET'])

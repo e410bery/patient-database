@@ -85,7 +85,7 @@ def test_register_lab_email_empty_body(client):
     assert response.status_code == 400
 
 
-def test_available_tests(client):
+def test_list_available_tests(client):
     response = client.get('/lab/list_available_tests')
     assert response.status_code == 200
     assert response.get_json() == ["HR", "HDL", "LDL", "TSH"]
