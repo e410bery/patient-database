@@ -1,8 +1,17 @@
 from flask import Flask, request, jsonify
 
+app = Flask(__name__)
 lab_email = ""
 open_requests = []
 lab_tests_available = ["HR", "HDL", "LDL", "TSH"]
+
+
+def validate_mrn(mrn):
+    try:
+        result = int(mrn)
+        return result if result > 0 else False
+    except ValueError:
+        return False
 
 
 def lab_routes(app):

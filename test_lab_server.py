@@ -1,8 +1,23 @@
 import pytest
 from server import app
-from lab_server import lab_routes
+from lab_server import lab_routes, validate_mrn
 
 lab_routes(app)
+
+
+@pytest.mark.parametrize("mrn, expected", [
+    (123, 123),
+    ("123", 123),
+    ("aj", False),
+    ("a54", False),
+    ("54a", False),
+    ("", False),
+    (" ", False),
+    ("12 3", False),
+    ("-123", False),
+])
+def test_validate_mrn(mrn, expected):
+    assert validate_mrn(mrn) == expected
 
 
 @pytest.fixture
