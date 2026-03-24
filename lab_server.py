@@ -1,7 +1,6 @@
 from flask import Flask, request, jsonify
 import requests
 
-app = Flask(__name__)
 lab_email = ""
 open_requests = []
 lab_tests_available = ["HR", "HDL", "LDL", "TSH"]
@@ -16,7 +15,7 @@ def validate_mrn(mrn):
         mrn: the raw MRN value (int or str)
 
     Returns:
-        int: the MRN as an integer, or False if invali
+        int: the MRN as an integer, or False if invalid
     '''
     try:
         result = int(mrn)
@@ -79,18 +78,23 @@ def send_email(from_email, to_email, subject, content):
 
 
 def lab_routes(app):
-    '''
-    Register the lab's e-mail address.
+    '''Register all /lab/* routes on the provided Flask app instance.
 
-    Accepts JSON: { "email": <email_address> }
-    Validates that "email" is present and is a string.
-
-    Returns:
-        200 with confirmation message on success.
-        400 with error message on validation failure.
+    Args:
+        app: a Flask application instance
     '''
     @app.route('/lab/email_address', methods=['POST'])
     def register_lab_email():
+        '''
+        Register the lab's e-mail address.
+
+        Accepts JSON: { "email": <email_address> }
+        Validates that "email" is present and is a string.
+
+        Returns:
+            200 with confirmation message on success.
+            400 with error message on validation failure.
+        '''
         global lab_email
         data = request.get_json()
         if not data or 'email' not in data:
@@ -102,12 +106,15 @@ def lab_routes(app):
 
     @app.route('/lab/list_available_tests', methods=['GET'])
     def list_available_tests():
+        '''Return a list of all available test names.'''
         return jsonify(lab_tests_available), 200
 
     @app.route('/lab/open_requests', methods=['GET'])
     def post_open_requests():
+        '''Return a list of all open test requests.'''
         return jsonify(open_requests)
 
     @app.route('/lab/new_result', methods=['POST'])
     def post_new_result():
+        '''Return a list of all open test requests.'''
         return "Result received", 200
