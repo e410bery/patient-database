@@ -133,7 +133,7 @@ def test_get_available_results(client):
     ],
 )
 def test_find_average(inputs, expected):
-    from patient_server import find_average 
+    from patient_server import find_average
     assert find_average(inputs) == expected
 
 
@@ -167,3 +167,25 @@ def test_get_interval_average(client):
 def test_validate_mrn_age(input_val, expected):
     from patient_server import validate_mrn_age
     assert validate_mrn_age(input_val) == expected
+
+
+@pytest.mark.parametrize(
+    "dates, start_time, expected",
+    [
+        (["2025-03-24 10:00:00", "2025-03-24 11:00:00",
+          "2025-03-24 12:00:00"], "2025-03-24 11:00:00", 1),
+        (["2025-03-24 10:00:00", "2025-03-24 11:00:00",
+          "2025-03-24 12:00:00"], "2025-03-24 11:30:00", 2),
+        (["2025-01-24 11:00:00", "2025-03-15 11:00:00",
+          "2025-04-24 11:00:00"], "2025-03-02 11:00:00", 1),
+        (["2025-03-24 10:00:00", "2025-03-24 11:00:00"],
+         "2025-03-24 09:00:00", 0),
+        (["2025-03-24 10:00:00", "2025-03-24 11:00:00"],
+         "2025-03-24 12:00:00", None),
+        ([], "2025-03-24 10:00:00", None),
+        (["2025-03-24 10:00:00"], "2025-03-24 09:00:00", 0),
+    ],
+)
+def test_find_time_index(dates, start_time, expected):
+    from patient_server import find_time_index
+    assert find_time_index(dates, start_time) == expected
