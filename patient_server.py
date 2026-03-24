@@ -64,7 +64,7 @@ def patient_routes(app):
 
     @app.route('/patient/results/<patient_mrn>/<test_name>', methods=['GET'])
     def get_available_results(patient_mrn, test_name):
-        '''mrn = request.json["patient_mrn"]
+        mrn = request.json["patient_mrn"]
         mrn = validate_mrn_age(mrn)
         if mrn is None:
             return "Invalid MRN", 400
@@ -76,7 +76,7 @@ def patient_routes(app):
             return "Test not found", 400
         # ask nika how she stored results for completed tests
         results = patient.tests[test]
-        return results, 200'''
+        # return results, 200
         return f"Available results for patient {patient_mrn}: {test_name}", 200
 
     @app.route('/patient/results/<patient_mrn>/<test_name>/average',
@@ -88,6 +88,28 @@ def patient_routes(app):
 
     @app.route('/patient/results/interval_average', methods=['POST'])
     def get_interval_average():
+        mrn = request.json["patient_mrn"]
+        test_name = request.json["test_name"]
+        start_time = request.json["average_since"]
+
+        mrn = validate_mrn_age(mrn)
+        if mrn is None:
+            return "Invalid MRN", 400
+        patient = patient_database.get_patient(mrn)
+        if patient is None:
+            return "Patient not found", 400
+        test = request.json["test_name"]
+        if test not in lab_server.lab_tests_available:
+            return "Test not found", 400
+
+        all_result = get_average_result(mrn, test_name)
+
+        # need to get times completed
+        interval_results = all_result
+        if interval_results is []:
+            return f"No results found after {start_time}", 400
+
+        # return find_average(interval_results), 200
         return "Interval Average: ", 200
 
 
