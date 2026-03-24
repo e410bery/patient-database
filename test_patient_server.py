@@ -1,5 +1,6 @@
 import pytest
 from server import app
+import patient_database
 
 
 @pytest.fixture
@@ -106,11 +107,120 @@ def test_new_request_success(client):
     assert response.data.decode() == "Added Request"
 
 
-def test_get_patient(client):
-    mrn = "12345"
+@pytest.mark.parametrize("mrn", ["abc", "54a"])
+def test_invalid_mrn(client, mrn):
     response = client.get(f"/patient/results/{mrn}")
+    assert response.status_code == 400
+
+
+def test_patient_results_no_tests(client):
+    patient_database.create_patient(123, "doc@hospital.com", 45)
+    data = client.get("/patient/results/1001").get_json()
+    assert data["patient_mrn"] == 123
+    assert data["completed_tests"] == []
+    assert data["open_requests"] == []
+
+
+def test_one_open_request(client):
+    import test_dict
+    patient_database.create_patient(124, "doc@hospital.com", 30)
+
+    t = test_dict.Test(
+        name="HR",
+        timestamp="2024-03-19 11:00:00",
+        mrn=124,
+        phys_email="doc@hospital.com",
+        mylab_email="lab@hospital.com",
+        status="pending",
+        age=30
+    )
+    t.test_r = None
+    t.result_timestamp = None
+    test_dict.test_dict[(124, "HR")] = t
+
+    data = client.get("/patient/results/124").get_json()
+    assert data["open_requests"] == [
+        {"test_name": "HR", "request_timestamp": "2024-03-19 11:00:00"}
+    ]
+    assert data["completed_tests"] == []
+
+
+def test_patient_results_patient_not_in_database(client):
+    response = client.get("/patient/results/111")
+    assert response.status_code == 400
+
+
+@pytest.fixture(autouse=True)
+def clear_dbs():
+    import test_dict
+    patient_database.db.clear()
+    test_dict.test_dict.clear()
+    yield
+    patient_database.db.clear()
+    test_dict.test_dict.clear()
+
+
+def test_patient_results_no_tests(client):
+    patient_database.create_patient(123, "doc@hospital.com", 45)
+    data = client.get("/patient/results/123").get_json()
+    response = client.get("/patient/results/123")
     assert response.status_code == 200
-    assert response.data.decode() == f"Got patient {mrn}"
+    assert data["patient_mrn"] == 123
+    assert data["completed_tests"] == []
+    assert data["open_requests"] == []
+
+
+def test_pending_status_goes_to_open_requests(client):
+    import test_dict
+    patient_database.create_patient(1002, "doc@hospital.com", 30)
+    t = test_dict.Test(
+        name="HR",
+        timestamp="2024-03-19 11:00:00",
+        mrn=1002,
+        phys_email="doc@hospital.com",
+        mylab_email="lab@hospital.com",
+        status="pending",
+        age=30
+    )
+    t.test_r = None
+    t.result_timestamp = None
+    test_dict.test_dict[(1002, "HR")] = t
+
+    data = client.get("/patient/results/1002").get_json()
+    assert len(data["open_requests"]) == 1
+    assert len(data["completed_tests"]) == 0
+
+
+def test_non_pending_status_goes_to_completed(client):
+    import test_dict
+    patient_database.create_patient(1002, "doc@hospital.com", 30)
+    t = test_dict.Test(
+        name="HR",
+        timestamp="2024-03-19 11:00:00",
+        mrn=1002,
+        phys_email="doc@hospital.com",
+        mylab_email="lab@hospital.com",
+        status="normal",
+        age=30
+    )
+    t.test_r = 72
+    t.result_timestamp = "2024-03-19 12:00:00"
+    test_dict.test_dict[(1002, "HR")] = t
+
+    data = client.get("/patient/results/1002").get_json()
+    assert len(data["completed_tests"]) == 1
+    assert len(data["open_requests"]) == 0
+
+
+def test_patient_results_format(client):
+    patient_database.create_patient(1002, "doc@hospital.com", 30)
+    data = client.get("/patient/results/1002").get_json()
+    assert "patient_mrn" in data
+    assert "completed_tests" in data
+    assert "open_requests" in data
+    assert data["patient_mrn"] == 1002
+    assert isinstance(data["completed_tests"], list)
+    assert isinstance(data["open_requests"], list)
 
 
 def test_get_available_results(client):
@@ -120,6 +230,58 @@ def test_get_available_results(client):
     assert response.status_code == 200
     assert response.data.decode() == f"Available results for " \
                                      f"patient {mrn}: {test_name}"
+
+
+def test_completed_test_status_abnormal(client):
+    import test_dict
+    patient_database.create_patient(1003, "doc@hospital.com", 30)
+    t = test_dict.Test(
+        name="HR",
+        timestamp="2024-03-19 11:00:00",
+        mrn=1003,
+        phys_email="doc@hospital.com",
+        mylab_email="lab@hospital.com",
+        status="Abnormal",
+        age=30
+    )
+    t.test_r = 120
+    t.result_timestamp = "2024-03-19 12:00:00"
+    test_dict.test_dict[(1003, "HR")] = t
+
+    data = client.get("/patient/results/1003").get_json()
+    assert data["completed_tests"][0]["test_status"] == "Abnormal"
+    assert data["completed_tests"][0]["test_result"] == 120
+
+
+def test_completed_test_status_normal(client):
+    import test_dict
+    patient_database.create_patient(1004, "doc@hospital.com", 30)
+    t = test_dict.Test(
+        name="HR",
+        timestamp="2024-03-19 11:00:00",
+        mrn=1004,
+        phys_email="doc@hospital.com",
+        mylab_email="lab@hospital.com",
+        status="Normal",
+        age=30
+    )
+    t.test_r = 72
+    t.result_timestamp = "2024-03-19 12:00:00"
+    test_dict.test_dict[(1004, "HR")] = t
+
+    data = client.get("/patient/results/1004").get_json()
+    assert data["completed_tests"][0]["test_status"] == "Normal"
+    assert data["completed_tests"][0]["test_result"] == 72
+
+
+def test_determine_test_status_abnormal():
+    from patient_server import determine_test_status
+    assert determine_test_status("Abnormal") == "Abnormal"
+
+
+def test_determine_test_status_normal():
+    from patient_server import determine_test_status
+    assert determine_test_status("Normal") == "Normal"
 
 
 @pytest.mark.parametrize(
