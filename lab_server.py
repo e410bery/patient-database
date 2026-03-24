@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify
+import requests
 
 app = Flask(__name__)
 lab_email = ""
@@ -34,6 +35,15 @@ def is_abnormal(test_name, test_result, age):
             return test_result > 119
         else:
             return test_result > 100
+
+
+def send_email(from_email, to_email, subject, content):
+    url = "http://vcm-51187.vm.duke.edu:5007/send_email"
+    payload = {"from_email": from_email,
+               "to_email": to_email,
+               "subject": subject,
+               "content": content}
+    requests.post(url, json=payload)
 
 
 def lab_routes(app):
