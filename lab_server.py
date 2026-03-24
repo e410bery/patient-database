@@ -8,14 +8,35 @@ lab_tests_available = ["HR", "HDL", "LDL", "TSH"]
 
 
 def validate_mrn(mrn):
+    '''Validates patient mrn to be a positive integer.
+
+    Accepts integers or numeric strings. Rejects strings containing letters.
+
+    Args:
+        mrn: the raw MRN value (int or str)
+
+    Returns:
+        int: the MRN as an integer, or False if invali
+    '''
     try:
         result = int(mrn)
-        return result if result > 0 else False
+        return result if result >= 0 else False
     except ValueError:
         return False
 
 
 def is_abnormal(test_name, test_result, age):
+    '''Determine whether a test result is abnormal.
+
+    Args:
+        test_name (str): one of "HR", "HDL", "LDL", "TSH"
+        test_result (int | float): numeric test result
+        age (int): patient age in years
+
+    Returns:
+        bool: True if the result is abnormal,
+        False otherwise
+    '''
     if test_name == "HDL":
         return test_result < 60
     if test_name == "LDL":
@@ -38,6 +59,17 @@ def is_abnormal(test_name, test_result, age):
 
 
 def send_email(from_email, to_email, subject, content):
+    '''Send an e-mail via the simulation server.
+
+    Args:
+        from_email (str): sender address
+        to_email (str): recipient address
+        subject (str): e-mail subject line
+        content (str): e-mail body text
+
+    Returns:
+        None
+    '''
     url = "http://vcm-51187.vm.duke.edu:5007/send_email"
     payload = {"from_email": from_email,
                "to_email": to_email,
@@ -47,7 +79,16 @@ def send_email(from_email, to_email, subject, content):
 
 
 def lab_routes(app):
+    '''
+    Register the lab's e-mail address.
 
+    Accepts JSON: { "email": <email_address> }
+    Validates that "email" is present and is a string.
+
+    Returns:
+        200 with confirmation message on success.
+        400 with error message on validation failure.
+    '''
     @app.route('/lab/email_address', methods=['POST'])
     def register_lab_email():
         global lab_email

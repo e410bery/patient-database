@@ -62,6 +62,29 @@ def test_register_lab_email_stores_email(client):
     assert lab_server.lab_email == "lab@hospital.com"
 
 
+def test_register_lab_email_success(client):
+    response = client.post('/lab/email_address',
+                           json={"email": "lab@hospital.com"})
+    assert response.status_code == 200
+
+
+def test_register_lab_email_missing_key(client):
+    response = client.post('/lab/email_address',
+                           json={"wrong_key": "lab@hospital.com"})
+    assert response.status_code == 400
+
+
+def test_register_lab_email_not_string(client):
+    response = client.post('/lab/email_address',
+                           json={"email": 123})
+    assert response.status_code == 400
+
+
+def test_register_lab_email_empty_body(client):
+    response = client.post('/lab/email_address', json={})
+    assert response.status_code == 400
+
+
 def test_available_tests(client):
     response = client.get('/lab/list_available_tests')
     assert response.status_code == 200
