@@ -2,7 +2,7 @@ import lab_server
 import patient_database
 import test_dict
 from datetime import datetime
-from flask import Flask, request
+from flask import Flask, request, jsonify
 
 
 def validate_mrn_age(val):
@@ -31,6 +31,10 @@ def find_time_index(dates, start_time_str):
             idx = i
             break
     return idx
+
+
+def determine_test_status(status):
+    return "Abnormal" if status == "Abnormal" else "Normal"
 
 
 def patient_routes(app):
@@ -70,9 +74,38 @@ def patient_routes(app):
         return "Added Request", 200
 
     @app.route('/patient/results/<patient_mrn>', methods=['GET'])
-    def get_patient(patient_mrn):
-        # to be implemented by nika
-        return f"Got patient {patient_mrn}", 200
+    def get_patient_results(patient_mrn):
+        mrn = validate_mrn_age(patient_mrn)
+        if mrn is None:
+            return "Invalid MRN", 400
+
+        patient = patient_database.get_patient(mrn)
+        if patient is None:
+            return "Patient not found", 400
+
+        completed = []
+        open_requests = []
+
+        for (stored_mrn, test_name), test in test_dict.test_dict.items():
+            if stored_mrn != mrn:
+                continue
+            if test.status == "pending":
+                open_requests.append({
+                    "test_name": test.name,
+                    "request_timestamp": test.timestamp
+                })
+            else:
+                completed.append({
+                    "test_name": test.name,
+                    "test_result": test.test_r,
+                    "test_status": determine_test_status(test.status),
+                    "test_timestamp": test.timestamp
+                })
+        return jsonify({
+            "patient_mrn": mrn,
+            "completed_tests": completed,
+            "open_requests": open_requests
+        }), 200
 
     @app.route('/patient/results/<patient_mrn>/<test_name>', methods=['GET'])
     def get_available_results(patient_mrn, test_name):
