@@ -9,15 +9,17 @@ def test_init():
         123,
         "doc@test.com",
         "lab@test.com",
-        "pending"
+        "pending",
+        15,
     )
     assert new_instance.name == "hdl"
     assert new_instance.timestamp == "2026-03-21 10:00:00"
     assert new_instance.mrn == 123
     assert new_instance.phys_email == "doc@test.com"
-    assert new_instance.lab_email == "lab@test.com"
+    assert new_instance.labemail == "lab@test.com"
     assert new_instance.test_r is None
     assert new_instance.status == "pending"
+    assert new_instance.age == 15
 
 
 def test_create_test():
@@ -39,7 +41,7 @@ def test_create_test():
     assert test.mrn == mrn
     assert test.name == name
     assert test.phys_email == "emf55@duke.edu"
-    assert test.lab_email == "lab@test.com"
+    assert test.labemail == "lab@test.com"
     assert test.status == "pending"
     assert (mrn, name) in test_dict
     assert test_dict[(mrn, name)] == test
@@ -54,13 +56,15 @@ def test_get_test():
         123,
         "doc@test.com",
         "lab@test.com",
-        "pending"
+        "pending",
+        15,
     )
     test_dict[(123, "hdl")] = test
     found = get_test(123, "hdl")
     assert found is not None
     assert found.mrn == 123
     assert found.name == "hdl"
+    assert found.age == 15
 
 
 def test_get_test_none():

@@ -1,5 +1,4 @@
-import lab_server
-from patient_database import get_patient_phys_email
+import patient_database
 import datetime
 
 test_dict = {}
@@ -7,25 +6,27 @@ test_dict = {}
 
 class Test:
     def __init__(self, name, timestamp, mrn,
-                 phys_email, lab_email, status, age):
+                 phys_email, mylab_email, status, age):
         self.name = name
         self.timestamp = timestamp
         self.mrn = mrn
         self.phys_email = phys_email
-        self.lab_email = lab_email
+        self.labemail = mylab_email
         self.test_r = None
         self.status = status
         self.age = age
 
 
 def create_test(mrn, name):
-    phys_email = get_patient_phys_email(mrn)
-    lab_email = lab_server.lab_email
-    age = get_patient_age(mrn)
+    from lab_server import lab_email
+    patient = patient_database.get_patient(mrn)
+    phys_email = patient.email
+    mylab_email = lab_email
+    age = patient.age
     now = datetime.datetime.now()
     timestamp = now.strftime('%Y-%m-%d %H:%M:%S')
     status = 'pending'
-    test = Test(name, timestamp, mrn, phys_email, lab_email, status, age)
+    test = Test(name, timestamp, mrn, phys_email, mylab_email, status, age)
     test_dict[(mrn, name)] = test
     # NOTE: need to send email here
     return test
