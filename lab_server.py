@@ -14,6 +14,28 @@ def validate_mrn(mrn):
         return False
 
 
+def is_abnormal(test_name, test_result, age):
+    if test_name == "HDL":
+        return test_result < 60
+    if test_name == "LDL":
+        return test_result >= 130
+    if test_name == "TSH":
+        return test_result < 1.0 or test_result > 4.0
+    if test_name == "HR":
+        if age <= 2:
+            return test_result > 151
+        elif age <= 4:
+            return test_result > 137
+        elif age <= 7:
+            return test_result > 133
+        elif age <= 11:
+            return test_result > 130
+        elif age <= 15:
+            return test_result > 119
+        else:
+            return test_result > 100
+
+
 def lab_routes(app):
 
     @app.route('/lab/email_address', methods=['POST'])
