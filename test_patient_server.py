@@ -28,10 +28,80 @@ def test_new_patient(client):
     response = client.post("/patient/new_patient", json=in_json)
     assert response.status_code == 200
     assert response.data.decode() == "Added Patient"
+    from patient_database import db
+    assert len(db) == 1
+    assert db[123].age == 21
 
 
-def test_new_request(client):
-    response = client.post("/patient/new_request")
+def test_new_patient_bad_mrn(client):
+    in_json = {"patient_mrn": "1a",
+               "attending_email": 'emf55@duke.edu',
+               "patient_age": 21}
+    response = client.post("/patient/new_patient", json=in_json)
+    assert response.status_code == 400
+    assert response.data.decode() == "Invalid MRN"
+
+
+def test_new_patient_bad_age(client):
+    in_json = {"patient_mrn": "123",
+               "attending_email": 'emf55@duke.edu',
+               "patient_age": "nine"}
+    response = client.post("/patient/new_patient", json=in_json)
+    assert response.status_code == 400
+    assert response.data.decode() == "Invalid Age"
+
+
+def test_new_patient_bad_email(client):
+    in_json = {"patient_mrn": "123",
+               "attending_email": 123,
+               "patient_age": "9"}
+    response = client.post("/patient/new_patient", json=in_json)
+    assert response.status_code == 400
+    assert response.data.decode() == "Invalid Email"
+
+
+def test_new_request_invalid_mrn(client):
+    response = client.post(
+        "/patient/new_request",
+        json={"patient_mrn": "abc", "test_name": "HDL"},
+    )
+    assert response.status_code == 400
+    assert response.data.decode() == "Invalid MRN"
+
+
+def test_new_request_patient_not_found(client):
+    import patient_database
+    patient_database.db.clear()
+    response = client.post(
+        "/patient/new_request",
+        json={"patient_mrn": 123, "test_name": "HDL"},
+    )
+    assert response.status_code == 400
+    assert response.data.decode() == "Patient not found"
+
+
+def test_new_request_test_not_found(client):
+    import patient_database
+    patient_database.db.clear()
+    patient_database.create_patient(123, "emf55", 21)
+    response = client.post(
+        "/patient/new_request",
+        json={"patient_mrn": "123", "test_name": "INVALID_TEST"},
+    )
+    assert response.status_code == 400
+    assert response.data.decode() == "Test not found"
+
+
+def test_new_request_success(client):
+    import patient_database
+    patient_database.db.clear()
+    patient_database.create_patient(123, "emf55", 21)
+    import lab_server
+    lab_server.lab_tests_available = ["HDL"]
+    response = client.post(
+        "/patient/new_request",
+        json={"patient_mrn": "123", "test_name": "HDL"},
+    )
     assert response.status_code == 200
     assert response.data.decode() == "Added Request"
 
@@ -52,6 +122,21 @@ def test_get_available_results(client):
                                      f"patient {mrn}: {test_name}"
 
 
+@pytest.mark.parametrize(
+    "inputs, expected",
+    [
+        ([1, 2, 3], 2.0),
+        ([10, 20, 30, 40], 25.0),
+        ([5], 5.0),
+        ([0, 0, 0], 0.0),
+        ([-1, -2, -3], -2.0),
+    ],
+)
+def test_find_average(inputs, expected):
+    from patient_server import find_average
+    assert find_average(inputs) == expected
+
+
 def test_get_average_result(client):
     mrn = "12345"
     test_name = "HDL"
@@ -61,6 +146,46 @@ def test_get_average_result(client):
 
 
 def test_get_interval_average(client):
-    response = client.get("/patient/results/interval_average")
+    response = client.post("/patient/results/interval_average")
     assert response.status_code == 200
     assert response.data.decode() == "Interval Average: "
+
+
+@pytest.mark.parametrize(
+    "input_val, expected",
+    [
+        (25, 25),
+        ("30", 30),
+        ("0", 0),
+        ("a14", None),
+        (3.14, None),
+        ("3.14", None),
+        ("abc", None),
+        ("", None),
+        (None, None),
+    ])
+def test_validate_mrn_age(input_val, expected):
+    from patient_server import validate_mrn_age
+    assert validate_mrn_age(input_val) == expected
+
+
+@pytest.mark.parametrize(
+    "dates, start_time, expected",
+    [
+        (["2025-03-24 10:00:00", "2025-03-24 11:00:00",
+          "2025-03-24 12:00:00"], "2025-03-24 11:00:00", 1),
+        (["2025-03-24 10:00:00", "2025-03-24 11:00:00",
+          "2025-03-24 12:00:00"], "2025-03-24 11:30:00", 2),
+        (["2025-01-24 11:00:00", "2025-03-15 11:00:00",
+          "2025-04-24 11:00:00"], "2025-03-02 11:00:00", 1),
+        (["2025-03-24 10:00:00", "2025-03-24 11:00:00"],
+         "2025-03-24 09:00:00", 0),
+        (["2025-03-24 10:00:00", "2025-03-24 11:00:00"],
+         "2025-03-24 12:00:00", None),
+        ([], "2025-03-24 10:00:00", None),
+        (["2025-03-24 10:00:00"], "2025-03-24 09:00:00", 0),
+    ],
+)
+def test_find_time_index(dates, start_time, expected):
+    from patient_server import find_time_index
+    assert find_time_index(dates, start_time) == expected
