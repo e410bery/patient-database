@@ -106,13 +106,22 @@ def lab_routes(app):
 
     @app.route('/lab/list_available_tests', methods=['GET'])
     def list_available_tests():
-        '''Return a list of all available test names.'''
+        '''Return a list of all available test names.
+
+        Returns:
+        200 with JSON list of available test name strings:
+        ["HR", "HDL", "LDL", "TSH"]
+        '''
         return jsonify(lab_tests_available), 200
 
     @app.route('/lab/open_requests', methods=['GET'])
-    def post_open_requests():
-        '''Return a list of all open test requests.'''
-        return jsonify(open_requests)
+    def get_open_requests():
+        '''Return a list of all open test requests.
+        Returns:
+        200 with JSON list of open request dicts,
+        or an empty list if there are no open requests.
+        '''
+        return jsonify(open_requests), 200
 
     @app.route('/lab/new_result', methods=['POST'])
     def post_new_result():

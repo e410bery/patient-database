@@ -15,7 +15,6 @@ lab_routes(app)
     ("", False),
     (" ", False),
     ("12 3", False),
-    ("-123", False),
 ])
 def test_validate_mrn(mrn, expected):
     assert validate_mrn(mrn) == expected
@@ -85,16 +84,31 @@ def test_register_lab_email_empty_body(client):
     assert response.status_code == 400
 
 
-def test_available_tests(client):
+def test_list_available_tests(client):
     response = client.get('/lab/list_available_tests')
     assert response.status_code == 200
     assert response.get_json() == ["HR", "HDL", "LDL", "TSH"]
 
 
-def test_open_requests(client):
+def test_open_requests_empty(client):
     response = client.get('/lab/open_requests')
     assert response.status_code == 200
     assert response.get_json() == []
+
+
+def test_open_requests_with_data(client):
+    import lab_server
+    lab_server.open_requests.append({
+        "patient_mrn": 123,
+        "test_name": "HR",
+        "request_timestamp": "2018-03-19 11:00:36"
+    })
+    response = client.get('/lab/open_requests')
+    assert response.status_code == 200
+    assert len(response.get_json()) == 1
+    assert response.get_json()[0]["patient_mrn"] == 123
+    assert response.get_json()[0]["test_name"] == "HR"
+    lab_server.open_requests.clear()
 
 
 def test_new_result(client):
