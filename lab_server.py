@@ -117,7 +117,6 @@ def lab_routes(app):
     @app.route('/lab/open_requests', methods=['GET'])
     def get_open_requests():
         '''Return a list of all open test requests.
-
         Returns:
         200 with JSON list of open request dicts,
         or an empty list if there are no open requests.

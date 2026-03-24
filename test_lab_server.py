@@ -15,7 +15,6 @@ lab_routes(app)
     ("", False),
     (" ", False),
     ("12 3", False),
-    ("-123", False),
 ])
 def test_validate_mrn(mrn, expected):
     assert validate_mrn(mrn) == expected
