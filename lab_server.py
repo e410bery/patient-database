@@ -129,6 +129,8 @@ def lab_routes(app):
     @app.route('/lab/new_result', methods=['POST'])
     def post_new_result():
         data = request.get_json()
+        if not data:
+           return "Missing or invalid JSON", 400
         for key in ["patient_mrn", "test_name", "test_result"]:
             if key not in data:
                 return f"Missing key: {key}", 400
