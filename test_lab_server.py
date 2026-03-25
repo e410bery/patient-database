@@ -5,7 +5,12 @@ from patient_database import db, Patient
 from lab_server import lab_routes, validate_mrn, is_abnormal
 import test_dict
 
-lab_routes(app)
+
+@pytest.fixture
+def client():
+    app.config["TESTING"] = True
+    with app.test_client() as client:
+        yield client
 
 
 @pytest.mark.parametrize("mrn, expected", [
@@ -172,7 +177,7 @@ def test_new_result_stores_result(client):
                 json={"patient_mrn": 123,
                       "test_name": "HDL",
                       "test_result": 70})
-    assert test_dict.get_test(123, "HDL").test_r == 70
+    assert test_dict.get_test(123, "HDL").test_r == [70]
 
 
 def test_new_result_missing_json(client):
@@ -211,7 +216,7 @@ def test_new_result_abnormal_sets_status(client):
                 json={"patient_mrn": 123,
                       "test_name": "HDL",
                       "test_result": 50})
-    assert test_dict.get_test(123, "HDL").status == "Abnormal"
+    assert test_dict.get_test(123, "HDL").status == ["Abnormal"]
 
 
 def test_new_result_normal_sets_status(client):
@@ -221,4 +226,4 @@ def test_new_result_normal_sets_status(client):
                 json={"patient_mrn": 123,
                       "test_name": "HDL",
                       "test_result": 70})
-    assert test_dict.get_test(123, "HDL").status == "Normal"
+    assert test_dict.get_test(123, "HDL").status == ["Normal"]
