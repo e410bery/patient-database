@@ -1,5 +1,6 @@
 db = {}
 
+
 class Patient:
     """
     Represents a patient in the system.

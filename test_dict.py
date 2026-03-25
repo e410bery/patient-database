@@ -15,7 +15,8 @@ class Test:
         mrn (str): Medical Record Number identifying the patient.
         phys_email (str): Email address of the requesting physician.
         lab_email (str): Email address of the lab receiving the request.
-        status (list[str]): Status history of the test (e.g., pending, completed).
+        status (list[str]): Status history of the
+        test (e.g., pending, completed).
         age (int): Patient's age.
     """
 

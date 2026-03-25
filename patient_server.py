@@ -57,7 +57,8 @@ def find_time_index(dates, start_time_str):
         start_time_str (str): Start time string in the same format.
 
     Returns:
-        int or None: Index of the first matching timestamp, or None if none found.
+        int or None: Index of the first matching timestamp,
+        or None if none found.
     """
     start_time = datetime.strptime(start_time_str, "%Y-%m-%d %H:%M:%S")
     idx = None

@@ -5,7 +5,12 @@ from patient_database import db, Patient
 from lab_server import lab_routes, validate_mrn, is_abnormal
 import test_dict
 
-lab_routes(app)
+
+@pytest.fixture
+def client():
+    app.config["TESTING"] = True
+    with app.test_client() as client:
+        yield client
 
 
 @pytest.mark.parametrize("mrn, expected", [
