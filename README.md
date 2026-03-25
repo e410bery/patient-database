@@ -28,7 +28,7 @@ TSH - Thyroid-Stimulating Hormone
    4. Start the server by running server.py (runs on http://localhost:5000 by default)
 
 **Deployed Server** 
-The server is currently running at: vcm-1000.vm.duke.edu:5000
+The server is currently running at: http://vcm-52575.vm.duke.edu:5000
 
 **MIT License**
 
