@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify
-import requests
 import logging
+import requests
 from datetime import datetime
 from test_dict import get_test
 
@@ -180,10 +180,10 @@ def lab_routes(app):
         test_result = data['test_result']
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-        test.test_r = test_result
-        test.timestamp = timestamp
+        test.test_r.append(test_result)
+        test.timestamp[-1] = timestamp
         abnormal = is_abnormal(test_name, test_result, test.age)
-        test.status = "Abnormal" if abnormal else "Normal"
+        test.status[-1] = "Abnormal" if abnormal else "Normal"
 
         open_requests[:] = [
             r for r in open_requests
