@@ -60,6 +60,7 @@ def is_abnormal(test_name, test_result, age):
             return test_result > 100
     return False
 
+
 def send_email(from_email, to_email, subject, content):
     '''Send an e-mail via the simulation server.
 
@@ -128,9 +129,31 @@ def lab_routes(app):
 
     @app.route('/lab/new_result', methods=['POST'])
     def post_new_result():
+        '''Post a new test result for a patient.
+
+        Accepts JSON: {
+            "patient_mrn": <medical_record_number>,
+            "test_name": <test_name>,
+            "test_result": <test_result>
+        }
+
+        Validates that all keys are present,
+        the MRN is a positive integer,
+        the patient exists,
+        the test name is valid,
+        and the result is numeric.
+        Stores the result,
+        removes the corresponding open request,
+        sends email to the physician
+        if the result is abnormal.
+
+        Returns:
+            200 with confirmation message on success.
+            400 with error message on validation failure.
+    '''
         data = request.get_json()
         if not data:
-           return "Missing or invalid JSON", 400
+            return "Missing or invalid JSON", 400
         for key in ["patient_mrn", "test_name", "test_result"]:
             if key not in data:
                 return f"Missing key: {key}", 400

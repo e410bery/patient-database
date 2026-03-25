@@ -173,3 +173,52 @@ def test_new_result_stores_result(client):
                       "test_name": "HDL",
                       "test_result": 70})
     assert test_dict.get_test(123, "HDL").test_r == 70
+
+
+def test_new_result_missing_json(client):
+    response = client.post('/lab/new_result',
+                           content_type='application/json')
+    assert response.status_code == 400
+
+
+def test_new_result_missing_key(client):
+    response = client.post('/lab/new_result',
+                           json={"patient_mrn": 123,
+                                 "test_name": "HDL"})
+    assert response.status_code == 400
+
+
+def test_new_result_invalid_mrn(client):
+    response = client.post('/lab/new_result',
+                           json={"patient_mrn": "abc",
+                                 "test_name": "HDL",
+                                 "test_result": 70})
+    assert response.status_code == 400
+
+
+def test_new_result_patient_not_found(client):
+    response = client.post('/lab/new_result',
+                           json={"patient_mrn": 999,
+                                 "test_name": "HDL",
+                                 "test_result": 70})
+    assert response.status_code == 400
+
+
+def test_new_result_abnormal_sets_status(client):
+    db[123] = Patient(123, "doc@hospital.com", 25, [])
+    test_dict.create_test(123, "HDL")
+    client.post('/lab/new_result',
+                json={"patient_mrn": 123,
+                      "test_name": "HDL",
+                      "test_result": 50})
+    assert test_dict.get_test(123, "HDL").status == "Abnormal"
+
+
+def test_new_result_normal_sets_status(client):
+    db[123] = Patient(123, "doc@hospital.com", 25, [])
+    test_dict.create_test(123, "HDL")
+    client.post('/lab/new_result',
+                json={"patient_mrn": 123,
+                      "test_name": "HDL",
+                      "test_result": 70})
+    assert test_dict.get_test(123, "HDL").status == "Normal"

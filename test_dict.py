@@ -11,7 +11,7 @@ class Test:
         self.timestamp = timestamp
         self.mrn = mrn
         self.phys_email = phys_email
-        self.labemail = mylab_email
+        self.lab_email = mylab_email
         self.test_r = None
         self.status = status
         self.age = age
@@ -19,6 +19,7 @@ class Test:
 
 def create_test(mrn, name):
     from lab_server import lab_email
+    import lab_server
     patient = patient_database.get_patient(mrn)
     phys_email = patient.email
     mylab_email = lab_email
@@ -28,6 +29,10 @@ def create_test(mrn, name):
     status = 'pending'
     test = Test(name, timestamp, mrn, phys_email, mylab_email, status, age)
     test_dict[(mrn, name)] = test
+    subject = f"New test request: MRN {mrn}, Test {name}"
+    content = (f"Patient MRN: {mrn}, Test: {name}, "
+               f"Requested: {timestamp}")
+    lab_server.send_email(phys_email, mylab_email, subject, content)
     # NOTE: need to send email here
     return test
 
