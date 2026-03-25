@@ -266,8 +266,10 @@ def patient_routes(app):
         test = test_name
         if test not in lab_server.lab_tests_available:
             return "Test not found", 400
-        results = test_dict.get_test(mrn, test).test_r
-        return results, 200
+        results = test_dict.get_test(mrn, test)
+        if results is None:
+            return []
+        return results.test_r, 200
 
     @app.route('/patient/results/<patient_mrn>/<test_name>/average',
                methods=['GET'])
