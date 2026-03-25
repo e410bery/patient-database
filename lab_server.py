@@ -73,7 +73,7 @@ def send_email(from_email, to_email, subject, content):
     Returns:
         None
     '''
-    url = "http://vcm-51187.vm.duke.edu:5007/send_email"
+    url = "http://vcm-51187.vm.duke.edu:5007"
     payload = {"from_email": from_email,
                "to_email": to_email,
                "subject": subject,
