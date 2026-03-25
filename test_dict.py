@@ -8,12 +8,12 @@ class Test:
     def __init__(self, name, timestamp, mrn,
                  phys_email, mylab_email, status, age):
         self.name = name
-        self.timestamp = timestamp
+        self.timestamp = [timestamp]
+        self.test_r = []
         self.mrn = mrn
         self.phys_email = phys_email
         self.lab_email = mylab_email
-        self.test_r = None
-        self.status = status
+        self.status = [status]
         self.age = age
 
 
@@ -33,7 +33,6 @@ def create_test(mrn, name):
     content = (f"Patient MRN: {mrn}, Test: {name}, "
                f"Requested: {timestamp}")
     lab_server.send_email(phys_email, mylab_email, subject, content)
-    # NOTE: need to send email here
     return test
 
 

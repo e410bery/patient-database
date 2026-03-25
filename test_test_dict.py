@@ -13,12 +13,12 @@ def test_init():
         15,
     )
     assert new_instance.name == "hdl"
-    assert new_instance.timestamp == "2026-03-21 10:00:00"
+    assert new_instance.timestamp == ["2026-03-21 10:00:00"]
     assert new_instance.mrn == 123
     assert new_instance.phys_email == "doc@test.com"
     assert new_instance.lab_email == "lab@test.com"
-    assert new_instance.test_r is None
-    assert new_instance.status == "pending"
+    assert new_instance.test_r == []
+    assert new_instance.status == ["pending"]
     assert new_instance.age == 15
 
 
@@ -42,7 +42,7 @@ def test_create_test():
     assert test.name == name
     assert test.phys_email == "emf55@duke.edu"
     assert test.lab_email == "lab@test.com"
-    assert test.status == "pending"
+    assert test.status == ["pending"]
     assert (mrn, name) in test_dict
     assert test_dict[(mrn, name)] == test
 
