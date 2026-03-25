@@ -16,6 +16,18 @@ class Test:
         self.status = [status]
         self.age = age
 
+    def append_request(self):
+        import lab_server
+        now = datetime.datetime.now()
+        timestamp = now.strftime('%Y-%m-%d %H:%M:%S')
+        subject = f"New test request: MRN {self.mrn}, Test {self.name}"
+        content = (f"Patient MRN: {self.mrn}, Test: {self.name}, "
+                   f"Requested: {timestamp}")
+        lab_server.send_email(self.phys_email, self.lab_email, subject,
+                              content)
+        self.status.append("pending")
+        self.timestamp.append(timestamp)
+
 
 def create_test(mrn, name):
     from lab_server import lab_email

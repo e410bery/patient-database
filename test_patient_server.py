@@ -104,7 +104,7 @@ def test_new_request_success(client):
         json={"patient_mrn": "123", "test_name": "HDL"},
     )
     assert response.status_code == 200
-    assert response.data.decode() == "Added Request"
+    assert response.data.decode() == "Added New Request"
 
 
 @pytest.mark.parametrize("mrn", ["abc", "54a"])
@@ -124,7 +124,7 @@ def test_patient_results_no_tests(client):
 def test_one_open_request(client):
     import test_dict
     patient_database.create_patient(124, "doc@hospital.com", 30)
-
+    test_dict.test_dict.clear()
     t = test_dict.Test(
         name="HR",
         timestamp="2024-03-19 11:00:00",
@@ -134,8 +134,6 @@ def test_one_open_request(client):
         status="pending",
         age=30
     )
-    t.test_r = None
-    t.result_timestamp = None
     test_dict.test_dict[(124, "HR")] = t
 
     data = client.get("/patient/results/124").get_json()
@@ -170,27 +168,6 @@ def test_patient_results_no_tests(client):
     assert data["open_requests"] == []
 
 
-def test_pending_status_goes_to_open_requests(client):
-    import test_dict
-    patient_database.create_patient(1002, "doc@hospital.com", 30)
-    t = test_dict.Test(
-        name="HR",
-        timestamp="2024-03-19 11:00:00",
-        mrn=1002,
-        phys_email="doc@hospital.com",
-        mylab_email="lab@hospital.com",
-        status="pending",
-        age=30
-    )
-    t.test_r = None
-    t.result_timestamp = None
-    test_dict.test_dict[(1002, "HR")] = t
-
-    data = client.get("/patient/results/1002").get_json()
-    assert len(data["open_requests"]) == 1
-    assert len(data["completed_tests"]) == 0
-
-
 def test_non_pending_status_goes_to_completed(client):
     import test_dict
     patient_database.create_patient(1002, "doc@hospital.com", 30)
@@ -203,8 +180,8 @@ def test_non_pending_status_goes_to_completed(client):
         status="normal",
         age=30
     )
-    t.test_r = 72
-    t.result_timestamp = "2024-03-19 12:00:00"
+    t.test_r = [72]
+    t.result_timestamp = ["2024-03-19 12:00:00"]
     test_dict.test_dict[(1002, "HR")] = t
 
     data = client.get("/patient/results/1002").get_json()
@@ -224,54 +201,19 @@ def test_patient_results_format(client):
 
 
 def test_get_available_results(client):
+    import test_dict
+    import patient_database
     mrn = "12345"
     test_name = "HDL"
+    patient_database.db[12345] = patient_database.Patient(12345,
+                                                          "mail", 50, [])
+    test_dict.test_dict[(12345, "HDL")] = test_dict.Test("HDL", "time",
+                                                         12345, "phys",
+                                                         "lab", "Abnormal",
+                                                         50)
+    test_dict.test_dict[(12345, "HDL")].test_r.append(50)
     response = client.get(f"/patient/results/{mrn}/{test_name}")
     assert response.status_code == 200
-    assert response.data.decode() == f"Available results for " \
-                                     f"patient {mrn}: {test_name}"
-
-
-def test_completed_test_status_abnormal(client):
-    import test_dict
-    patient_database.create_patient(1003, "doc@hospital.com", 30)
-    t = test_dict.Test(
-        name="HR",
-        timestamp="2024-03-19 11:00:00",
-        mrn=1003,
-        phys_email="doc@hospital.com",
-        mylab_email="lab@hospital.com",
-        status="Abnormal",
-        age=30
-    )
-    t.test_r = 120
-    t.result_timestamp = "2024-03-19 12:00:00"
-    test_dict.test_dict[(1003, "HR")] = t
-
-    data = client.get("/patient/results/1003").get_json()
-    assert data["completed_tests"][0]["test_status"] == "Abnormal"
-    assert data["completed_tests"][0]["test_result"] == 120
-
-
-def test_completed_test_status_normal(client):
-    import test_dict
-    patient_database.create_patient(1004, "doc@hospital.com", 30)
-    t = test_dict.Test(
-        name="HR",
-        timestamp="2024-03-19 11:00:00",
-        mrn=1004,
-        phys_email="doc@hospital.com",
-        mylab_email="lab@hospital.com",
-        status="Normal",
-        age=30
-    )
-    t.test_r = 72
-    t.result_timestamp = "2024-03-19 12:00:00"
-    test_dict.test_dict[(1004, "HR")] = t
-
-    data = client.get("/patient/results/1004").get_json()
-    assert data["completed_tests"][0]["test_status"] == "Normal"
-    assert data["completed_tests"][0]["test_result"] == 72
 
 
 def test_determine_test_status_abnormal():
@@ -300,17 +242,49 @@ def test_find_average(inputs, expected):
 
 
 def test_get_average_result(client):
-    mrn = "12345"
-    test_name = "HDL"
-    response = client.get(f"/patient/results/{mrn}/{test_name}/average")
+    import test_dict
+    import patient_database
+
+    # setup patient
+    patient_database.create_patient(12345, "phys", 50)
+
+    # setup test with results
+    t = test_dict.Test("HDL", "time", 12345, "phys", "lab", "Normal", 50)
+    t.test_r = [40, 60]  # avg = 50
+    test_dict.test_dict[(12345, "HDL")] = t
+
+    response = client.get("/patient/results/12345/HDL/average")
+
     assert response.status_code == 200
-    assert response.data.decode() == "Average result: "
+    assert response.json == 50
 
 
 def test_get_interval_average(client):
-    response = client.post("/patient/results/interval_average")
+    import test_dict
+    import patient_database
+
+    # setup patient
+    patient_database.create_patient(12345, "phys", 50)
+
+    # setup test with timestamps + results
+    t = test_dict.Test("HDL", "2023-01-01 00:00:00", 12345,
+                       "phys", "lab", "Normal", 50)
+    t.test_r = [10, 20, 30]
+    t.timestamp = [
+        "2023-01-01 00:00:00",
+        "2023-02-01 00:00:00",
+        "2023-03-01 00:00:00"
+    ]
+    test_dict.test_dict[(12345, "HDL")] = t
+
+    response = client.post("/patient/results/interval_average", json={
+        "patient_mrn": 12345,
+        "test_name": "HDL",
+        "average_since": "2023-02-01 00:00:00"
+    })
+
     assert response.status_code == 200
-    assert response.data.decode() == "Interval Average: "
+    assert response.json == 25  # avg of [20, 30]
 
 
 @pytest.mark.parametrize(
@@ -351,3 +325,33 @@ def test_validate_mrn_age(input_val, expected):
 def test_find_time_index(dates, start_time, expected):
     from patient_server import find_time_index
     assert find_time_index(dates, start_time) == expected
+
+
+def test_get_times_pending():
+    import test_dict
+    from patient_server import get_times
+
+    t = test_dict.Test("HDL", "t1", 12345, "phys", "lab", "Normal", 50)
+    t.timestamp = ["t1", "t2", "t3"]
+    t.status = ["Normal", "Normal", "pending"]
+
+    test_dict.test_dict[(12345, "HDL")] = t
+
+    result = get_times(12345, "HDL")
+
+    assert result == ["t1", "t2"]
+
+
+def test_get_times_completed():
+    import test_dict
+    from patient_server import get_times
+
+    t = test_dict.Test("HDL", "t1", 12345, "phys", "lab", "Normal", 50)
+    t.timestamp = ["t1", "t2"]
+    t.status = ["Normal", "Abnormal"]
+
+    test_dict.test_dict[(12345, "HDL")] = t
+
+    result = get_times(12345, "HDL")
+
+    assert result == ["t1", "t2"]

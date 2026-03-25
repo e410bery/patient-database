@@ -37,6 +37,13 @@ def determine_test_status(status):
     return "Abnormal" if status == "Abnormal" else "Normal"
 
 
+def get_times(mrn, test):
+    test = test_dict.get_test(mrn, test)
+    if test.status[-1] == "pending":
+        return test.timestamp[0:len(test.timestamp)-1]
+    return test.timestamp
+
+
 def patient_routes(app):
     @app.route('/patient', methods=['GET'])
     def patient_server_status():
@@ -70,8 +77,13 @@ def patient_routes(app):
         test = request.json["test_name"]
         if test not in lab_server.lab_tests_available:
             return "Test not found", 400
-        test_dict.create_test(mrn, test)
-        return "Added Request", 200
+        new_test = test_dict.get_test(mrn, test)
+        if new_test is None:
+            test_dict.create_test(mrn, test)
+            return "Added New Request", 200
+        else:
+            new_test.append_request()
+            return "Added Request", 200
 
     @app.route('/patient/results/<patient_mrn>', methods=['GET'])
     def get_patient_results(patient_mrn):
@@ -89,18 +101,27 @@ def patient_routes(app):
         for (stored_mrn, test_name), test in test_dict.test_dict.items():
             if stored_mrn != mrn:
                 continue
-            if test.status == "pending":
+            if test.status[-1] == "pending":
                 open_requests.append({
                     "test_name": test.name,
-                    "request_timestamp": test.timestamp
+                    "request_timestamp": test.timestamp[-1]
                 })
+                if len(test.status) > 1:
+                    for i in range(0, len(test.status)-1):
+                        completed.append({
+                            "test_name": test.name,
+                            "test_result": test.test_r[i],
+                            "test_status": test.status[i],
+                            "test_timestamp": test.timestamp[i]
+                        })
             else:
-                completed.append({
-                    "test_name": test.name,
-                    "test_result": test.test_r,
-                    "test_status": determine_test_status(test.status),
-                    "test_timestamp": test.timestamp
-                })
+                for i in range(0, len(test.status)):
+                    completed.append({
+                        "test_name": test.name,
+                        "test_result": test.test_r[i],
+                        "test_status": test.status[i],
+                        "test_timestamp": test.timestamp[i]
+                    })
         return jsonify({
             "patient_mrn": mrn,
             "completed_tests": completed,
@@ -109,54 +130,69 @@ def patient_routes(app):
 
     @app.route('/patient/results/<patient_mrn>/<test_name>', methods=['GET'])
     def get_available_results(patient_mrn, test_name):
-        # mrn = request.json["patient_mrn"]
-        # mrn = validate_mrn_age(mrn)
-        # if mrn is None:
-        #    return "Invalid MRN", 400
-        # patient = patient_database.get_patient(mrn)
-        # if patient is None:
-        #    return "Patient not found", 400
-        # test = request.json["test_name"]
-        # if test not in lab_server.lab_tests_available:
-        #    return "Test not found", 400
-        # ask nika how she stored results for completed tests
-        # results = test_dict.test_dict[(mrn, test)].results
-        # return results, 200
-        return f"Available results for patient {patient_mrn}: {test_name}", 200
+        mrn = patient_mrn
+        mrn = validate_mrn_age(mrn)
+        if mrn is None:
+            return "Invalid MRN", 400
+        patient = patient_database.get_patient(mrn)
+        if patient is None:
+            return "Patient not found", 400
+        test = test_name
+        if test not in lab_server.lab_tests_available:
+            return "Test not found", 400
+        results = test_dict.get_test(mrn, test).test_r
+        return results, 200
 
     @app.route('/patient/results/<patient_mrn>/<test_name>/average',
                methods=['GET'])
     def get_average_result(patient_mrn, test_name):
-        results = get_available_results(patient_mrn, test_name)
-        # return find_average(results), 200
-        return "Average result: ", 200
+        mrn = patient_mrn
+        mrn = validate_mrn_age(mrn)
+        if mrn is None:
+            return "Invalid MRN", 400
+        patient = patient_database.get_patient(mrn)
+        if patient is None:
+            return "Patient not found", 401
+        test = test_dict.test_dict.get((mrn, test_name))
+        if test is None:
+            return "Test not found", 402
+        results = test.test_r
+        return jsonify(find_average(results)), 200
 
     @app.route('/patient/results/interval_average', methods=['POST'])
     def get_interval_average():
-        # mrn = request.json["patient_mrn"]
-        # test_name = request.json["test_name"]
-        # start_time = request.json["average_since"]
+        mrn = request.json["patient_mrn"]
+        test_name = request.json["test_name"]
+        start_time = request.json["average_since"]
 
-        # mrn = validate_mrn_age(mrn)
-        # if mrn is None:
-        #     return "Invalid MRN", 400
-        # patient = patient_database.get_patient(mrn)
-        # if patient is None:
-        #     return "Patient not found", 400
-        # test = request.json["test_name"]
-        # if test not in lab_server.lab_tests_available:
-        #     return "Test not found", 400
+        mrn = validate_mrn_age(mrn)
+        if mrn is None:
+            return "Invalid MRN", 400
 
-        # all_result = get_available_results(mrn, test_name)
+        patient = patient_database.get_patient(mrn)
+        if patient is None:
+            return "Patient not found", 400
 
-        # # find results after start time
-        # idx = find_time_index(all_result, start_time)
-        # interval_results = all_result[idx:]
-        # if interval_results is []:
-        #     return f"No results found on/after {start_time}", 400
-        # avg = find_average(interval_results)
-        # return avg, 200
-        return "Interval Average: ", 200
+        if test_name not in lab_server.lab_tests_available:
+            return "Test not found", 400
+
+        test = test_dict.test_dict.get((mrn, test_name))
+        if test is None:
+            return "Test not found", 400
+
+        all_times = get_times(mrn, test_name)
+        idx = find_time_index(all_times, start_time)
+
+        if idx is None:
+            return f"No results found on/after {start_time}", 400
+
+        interval_results = test.test_r[idx:]
+
+        if not interval_results:
+            return f"No results found on/after {start_time}", 400
+
+        avg = find_average(interval_results)
+        return jsonify(avg), 200
 
 
 def main():
