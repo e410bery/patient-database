@@ -22,7 +22,7 @@ def validate_mrn(mrn):
     '''
     try:
         result = int(mrn)
-        return result if result >= 0 else False
+        return result if result > 0 else False
     except ValueError:
         return False
 
@@ -58,7 +58,7 @@ def is_abnormal(test_name, test_result, age):
             return test_result > 119
         else:
             return test_result > 100
-
+    return False
 
 def send_email(from_email, to_email, subject, content):
     '''Send an e-mail via the simulation server.
@@ -136,6 +136,10 @@ def lab_routes(app):
         patient_mrn = validate_mrn(data['patient_mrn'])
         if patient_mrn is False:
             return "Invalid MRN", 400
+        import patient_database
+        patient = patient_database.get_patient(patient_mrn)
+        if patient is None:
+            return "Patient not found", 400
 
         if data['test_name'] not in lab_tests_available:
             return "Invalid test name", 400
